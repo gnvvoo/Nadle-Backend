@@ -21,5 +21,9 @@ server:
   port: 8080
 
 bike-api:
-  service-key: ${BIKE_API_KEY}
+  service-key: ${BIKE_API_KEY:}
   endpoint: https://apis.data.go.kr/B551982/pbdo_v2
+
+spring:
+  profiles:
+    include: secret
