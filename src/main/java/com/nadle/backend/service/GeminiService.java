@@ -137,8 +137,7 @@ public class GeminiService {
                 "generationConfig", Map.of(
                         "temperature", 0.7,
                         "topP", 0.95,
-                        "maxOutputTokens", 8192,
-                        "responseMimeType", "application/json"
+                        "maxOutputTokens", 8192
                 )
         );
 
@@ -178,7 +177,12 @@ public class GeminiService {
      */
     private RouteRecommendResponse parseGeminiResponse(String jsonText, int duration) {
         try {
-            JsonNode root = objectMapper.readTree(jsonText);
+            String cleanedJson = jsonText.trim();
+            if (cleanedJson.startsWith("```")) {
+                cleanedJson = cleanedJson.replaceAll("^```json|```$", "").trim();
+            }
+        
+            JsonNode root = objectMapper.readTree(cleanedJson);
 
             String aiSummary = root.path("aiSummary").asText();
 
