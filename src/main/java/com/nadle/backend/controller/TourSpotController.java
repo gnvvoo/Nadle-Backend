@@ -2,12 +2,14 @@ package com.nadle.backend.controller;
 
 import com.nadle.backend.dto.ApiResponse;
 import com.nadle.backend.dto.SpotCategory;
+import com.nadle.backend.dto.SpotDetailResponse;
 import com.nadle.backend.dto.SpotListResponse;
 import com.nadle.backend.service.TourSpotService;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -44,5 +46,13 @@ public class TourSpotController {
     ) {
         SpotListResponse result = tourSpotService.findNearbySpots(lat, lng, radius, category, page, size);
         return ResponseEntity.ok(ApiResponse.success("주변 관광지 조회 성공", result));
+    }
+
+    @GetMapping("/{spotId}")
+    public ResponseEntity<ApiResponse<SpotDetailResponse>> getSpotDetail(
+            @PathVariable String spotId
+    ) {
+        SpotDetailResponse result = tourSpotService.findSpotDetail(spotId);
+        return ResponseEntity.ok(ApiResponse.success("관광지 상세 조회 성공", result));
     }
 }
