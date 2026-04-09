@@ -46,8 +46,19 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(RestClientException.class)
     public ResponseEntity<ErrorResponse> handleRestClientException(RestClientException e) {
+        log.error("외부 API 호출 실패: {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                 .body(new ErrorResponse(502, "외부 API 호출에 실패했습니다."));
+    }
+
+    /**
+     * AI 추천 및 외부 서비스 처리 실패 시 처리
+     */
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException e) {
+        log.error("처리 중 오류 발생: {}", e.getMessage());
+        return ResponseEntity.internalServerError()
+                .body(new ErrorResponse(500, e.getMessage()));
     }
 
     /**

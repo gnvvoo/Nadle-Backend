@@ -16,6 +16,8 @@ spring:
       hibernate:
         format_sql: true
     database-platform: org.hibernate.dialect.H2Dialect
+  profiles:
+    include: secret
 
 server:
   port: 8080
@@ -24,6 +26,11 @@ bike-api:
   service-key: ${BIKE_API_KEY:}
   endpoint: https://apis.data.go.kr/B551982/pbdo_v2
 
-spring:
-  profiles:
-    include: secret
+tour-api:
+  service-key: ${TOUR_API_KEY:}
+  endpoint: https://apis.data.go.kr/B551011/KorService2
+
+gemini-api:
+  api-key: ${GEMINI_API_KEY:}
+  endpoint: https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent
+  mock: false
