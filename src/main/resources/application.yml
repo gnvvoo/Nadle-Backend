@@ -34,3 +34,7 @@ gemini-api:
   api-key: ${GEMINI_API_KEY:}
   endpoint: https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent
   mock: false
+
+store-api:
+  service-key: ${STORE_API_KEY:}
+  endpoint: https://apis.data.go.kr/B553077/api/open/sdsc2
