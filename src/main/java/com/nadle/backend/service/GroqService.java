@@ -110,37 +110,23 @@ public class GroqService {
         }
         sb.append("\n");
 
+        List<TourSpotItem> candidates = spots.size() > 20 ? spots.subList(0, 20) : spots;
         sb.append("관광지 목록 (JSON):\n[\n");
-        for (int i = 0; i < spots.size(); i++) {
-            TourSpotItem spot = spots.get(i);
+        for (int i = 0; i < candidates.size(); i++) {
+            TourSpotItem spot = candidates.get(i);
             sb.append("  {");
-            sb.append("\"contentId\": \"").append(spot.getContentId()).append("\", ");
-            sb.append("\"title\": \"").append(spot.getTitle()).append("\", ");
-            sb.append("\"mapx\": ").append(spot.getMapx()).append(", ");
-            sb.append("\"mapy\": ").append(spot.getMapy());
-            if (spot.getAddr1() != null) {
-                sb.append(", \"addr\": \"").append(spot.getAddr1()).append("\"");
-            }
+            sb.append("\"id\": \"").append(spot.getContentId()).append("\", ");
+            sb.append("\"name\": \"").append(spot.getTitle()).append("\", ");
+            sb.append("\"x\": ").append(spot.getMapx()).append(", ");
+            sb.append("\"y\": ").append(spot.getMapy());
             sb.append("}");
-            if (i < spots.size() - 1) sb.append(",");
+            if (i < candidates.size() - 1) sb.append(",");
             sb.append("\n");
         }
         sb.append("]\n\n");
 
         sb.append("반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 포함하지 마세요:\n");
-        sb.append("{\n");
-        sb.append("  \"aiSummary\": \"코스 한줄 소개\",\n");
-        sb.append("  \"spots\": [\n");
-        sb.append("    {\n");
-        sb.append("      \"contentId\": \"관광지ID\",\n");
-        sb.append("      \"title\": \"관광지명\",\n");
-        sb.append("      \"sequence\": 1,\n");
-        sb.append("      \"reason\": \"추천 이유\",\n");
-        sb.append("      \"mapx\": 경도값,\n");
-        sb.append("      \"mapy\": 위도값\n");
-        sb.append("    }\n");
-        sb.append("  ]\n");
-        sb.append("}");
+        sb.append("{\"aiSummary\":\"코스 한줄 소개\",\"spots\":[{\"contentId\":\"관광지ID\",\"title\":\"관광지명\",\"sequence\":1,\"reason\":\"추천 이유\",\"mapx\":경도값,\"mapy\":위도값}]}");
 
         return sb.toString();
     }
