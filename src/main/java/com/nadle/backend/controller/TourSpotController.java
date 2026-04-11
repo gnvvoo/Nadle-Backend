@@ -1,9 +1,11 @@
 package com.nadle.backend.controller;
 
 import com.nadle.backend.dto.ApiResponse;
+import com.nadle.backend.dto.QuizResponse;
 import com.nadle.backend.dto.SpotCategory;
 import com.nadle.backend.dto.SpotDetailResponse;
 import com.nadle.backend.dto.SpotListResponse;
+import com.nadle.backend.service.GroqService;
 import com.nadle.backend.service.TourSpotService;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.http.ResponseEntity;
@@ -20,9 +22,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class TourSpotController {
 
     private final TourSpotService tourSpotService;
+    private final GroqService groqService;
 
-    public TourSpotController(TourSpotService tourSpotService) {
+    public TourSpotController(TourSpotService tourSpotService, GroqService groqService) {
         this.tourSpotService = tourSpotService;
+        this.groqService = groqService;
     }
 
     /**
@@ -54,5 +58,17 @@ public class TourSpotController {
     ) {
         SpotDetailResponse result = tourSpotService.findSpotDetail(spotId);
         return ResponseEntity.ok(ApiResponse.success("관광지 상세 조회 성공", result));
+    }
+
+    @GetMapping("/{spotId}/quiz")
+    public ResponseEntity<ApiResponse<QuizResponse>> getSpotQuiz(
+            @PathVariable String spotId
+    ) {
+        SpotDetailResponse spot = tourSpotService.findSpotDetail(spotId);
+        if (spot.getDescription() == null || spot.getDescription().isBlank()) {
+            throw new RuntimeException("해당 관광지는 소개글이 없어 퀴즈를 생성할 수 없습니다.");
+        }
+        QuizResponse quiz = groqService.generateQuiz(spot.getSpotName(), spot.getDescription());
+        return ResponseEntity.ok(ApiResponse.success("퀴즈 생성 성공", quiz));
     }
 }

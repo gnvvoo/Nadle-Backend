@@ -2,6 +2,7 @@ package com.nadle.backend.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nadle.backend.dto.QuizResponse;
 import com.nadle.backend.dto.RouteRecommendResponse;
 import com.nadle.backend.dto.SpotDto;
 import com.nadle.backend.dto.external.TourSpotItem;
@@ -99,7 +100,7 @@ public class GroqService {
         StringBuilder sb = new StringBuilder();
         sb.append("당신은 자전거 여행 코스 추천 전문가입니다.\n");                                      
         sb.append("아래 관광지 목록에서 자전거로 ").append(duration).append("분 동안 여행하기 좋은 ");
-        sb.append(spotCount).append("개의 관광지를 선택하여 최적의 코스를 추천해주세요.\n\n");          
+        sb.append("최소 2개 ~ 최대 3개의 관광지를 선택하여 최적의 코스를 추천해주세요.\n\n");          
         sb.append("조건:\n");                                                                           
         sb.append("- 이동 거리와 시간을 고려하여 효율적인 동선으로 구성하세요.\n");                     
         sb.append("- 각 관광지 방문 이유를 한 문장으로 간결하게 설명하세요.\n");                        
@@ -152,6 +153,32 @@ public class GroqService {
         } catch (Exception e) {
             log.error("Groq 응답 JSON 파싱 실패: {}", e.getMessage());
             throw new RuntimeException("AI 응답을 파싱하는 데 실패했습니다.");
+        }
+    }
+
+    public QuizResponse generateQuiz(String title, String overview) {
+        String cleaned = overview.replaceAll("<[^>]+>", " ").replaceAll("\\s+", " ").trim();
+        String truncated = cleaned.length() > 800 ? cleaned.substring(0, 800) : cleaned;
+
+        String prompt = "한국어로만 응답. 아래 관광지 설명을 읽고 OX 퀴즈 1개를 만들어라.\n"
+                + "관광지: " + title + "\n"
+                + "설명: " + truncated + "\n"
+                + "JSON만 출력:{\"question\":\"문제\",\"answer\":true,\"explanation\":\"해설\"}";
+
+        log.info("Groq 퀴즈 생성 요청 - 관광지: {}", title);
+        String responseText = callGroqApi(prompt);
+
+        try {
+            String cleanedJson = responseText.trim().replaceAll("(?s)^```json|^```|```$", "").trim();
+            JsonNode root = objectMapper.readTree(cleanedJson);
+            return new QuizResponse(
+                    root.path("question").asText(),
+                    root.path("answer").asBoolean(),
+                    root.path("explanation").asText()
+            );
+        } catch (Exception e) {
+            log.error("퀴즈 응답 파싱 실패: {}", e.getMessage());
+            throw new RuntimeException("퀴즈 생성에 실패했습니다.");
         }
     }
 
