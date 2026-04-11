@@ -35,10 +35,9 @@ public class RouteRecommendService {
     public RouteRecommendResponse recommend(Double stationLat, Double stationLng, Integer duration, String requirements) {
         int resolvedDuration = duration != null ? duration : DEFAULT_DURATION;
         int radius = resolveRadius(resolvedDuration);
-        int spotCount = resolveSpotCount(resolvedDuration);
 
-        log.info("코스 추천 요청 - 위도: {}, 경도: {}, 시간: {}분, 반경: {}m, 추천 관광지 수: {}개, 요구사항: {}",
-                stationLat, stationLng, resolvedDuration, radius, spotCount, requirements);
+        log.info("코스 추천 요청 - 위도: {}, 경도: {}, 시간: {}분, 반경: {}m, 요구사항: {}",
+                stationLat, stationLng, resolvedDuration, radius, requirements);
 
         // TourAPI의 mapX = 경도, mapY = 위도
         List<TourSpotItem> nearbySpots = tourApiService.fetchNearbySpots(stationLng, stationLat, radius);
@@ -48,7 +47,7 @@ public class RouteRecommendService {
         }
 
         log.info("주변 관광지 {}개 조회 완료, Groq 코스 추천 요청", nearbySpots.size());
-        return groqService.recommendCourse(nearbySpots, resolvedDuration, spotCount, requirements);
+        return groqService.recommendCourse(nearbySpots, resolvedDuration, requirements);
     }
 
     /**
@@ -60,13 +59,4 @@ public class RouteRecommendService {
         return 5000;
     }
 
-    /**
-     * duration에 따라 추천 관광지 수를 결정한다.
-     */
-    private int resolveSpotCount(int duration) {
-        if (duration <= 60) return 2;
-        if (duration <= 120) return 3;
-        if (duration <= 180) return 4;
-        return 5;
-    }
 }

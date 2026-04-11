@@ -45,12 +45,12 @@ public class GroqService {
         this.mock = mock;
     }
 
-    public RouteRecommendResponse recommendCourse(List<TourSpotItem> spots, int duration, int spotCount, String requirements) {
+    public RouteRecommendResponse recommendCourse(List<TourSpotItem> spots, int duration, String requirements) {
         if (mock) {
             log.info("Groq mock 모드 - 실제 API 호출 생략");
-            return buildMockResponse(spots, duration, spotCount);
+            return buildMockResponse(spots, duration);
         }
-        String prompt = buildPrompt(spots, duration, spotCount, requirements);
+        String prompt = buildPrompt(spots, duration, requirements);
         String responseText = callGroqApi(prompt);
         return parseResponse(responseText, duration);
     }
@@ -96,17 +96,17 @@ public class GroqService {
         }
     }
 
-    private String buildPrompt(List<TourSpotItem> spots, int duration, int spotCount, String requirements) {
+    private String buildPrompt(List<TourSpotItem> spots, int duration, String requirements) {
         StringBuilder sb = new StringBuilder();
-        sb.append("당신은 자전거 여행 코스 추천 전문가입니다.\n");                                      
-        sb.append("아래 관광지 목록에서 자전거로 ").append(duration).append("분 동안 여행하기 좋은 ");
-        sb.append("최소 2개 ~ 최대 3개의 관광지를 선택하여 최적의 코스를 추천해주세요.\n\n");          
-        sb.append("조건:\n");                                                                           
-        sb.append("- 이동 거리와 시간을 고려하여 효율적인 동선으로 구성하세요.\n");                     
-        sb.append("- 각 관광지 방문 이유를 한 문장으로 간결하게 설명하세요.\n");                        
-        sb.append("- 전체 코스를 한 줄로 소개하는 aiSummary를 작성하세요.\n");                          
-        sb.append("- 모든 응답은 반드시 한국어로 작성하세요.\n"); 
-        sb.append(duration).append("분, ").append(spotCount).append("개 선택.");
+        sb.append("당신은 자전거 여행 코스 추천 전문가입니다.\n");
+        sb.append("아래 관광지 목록에서 자전거로 ").append(duration).append("분 동안 여행하기 좋은 관광지를 선택하여 최적의 코스를 추천해주세요.\n\n");
+        sb.append("조건:\n");
+        sb.append("- 이동 거리와 시간을 고려하여 효율적인 동선으로 구성하세요.\n");
+        sb.append("- 이동 거리와 시간을 고려하여 반드시 2~3개의 관광지로 구성하세요.\n");
+        sb.append("- 각 관광지 방문 이유를 한 문장으로 간결하게 설명하세요.\n");
+        sb.append("- 전체 코스를 한 줄로 소개하는 aiSummary를 작성하세요.\n");
+        sb.append("- 모든 응답은 반드시 한국어로 작성하세요.\n");
+        sb.append(duration).append("분.");
         if (requirements != null && !requirements.isBlank()) {
             sb.append(" 요구사항: ").append(requirements).append(".");
         }
@@ -182,9 +182,9 @@ public class GroqService {
         }
     }
 
-    private RouteRecommendResponse buildMockResponse(List<TourSpotItem> spots, int duration, int spotCount) {
+    private RouteRecommendResponse buildMockResponse(List<TourSpotItem> spots, int duration) {
         List<SpotDto> selected = new ArrayList<>();
-        int count = Math.min(spotCount, spots.size());
+        int count = Math.min(3, spots.size());
         for (int i = 0; i < count; i++) {
             TourSpotItem s = spots.get(i);
             selected.add(new SpotDto(s.getContentId(), s.getTitle(), i + 1, "(mock) 추천 관광지", s.getMapx(), s.getMapy()));
