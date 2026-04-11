@@ -33,7 +33,7 @@ tour-api:
 groq-api:
   api-key: ${GROQ_API_KEY:}
   endpoint: https://api.groq.com/openai/v1/chat/completions
-  model: llama-3.1-8b-instant
+  model: gemma2-9b-it
   mock: false
 
 store-api:
