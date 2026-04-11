@@ -48,7 +48,7 @@ public class BikeStationService {
     /**
      * 현재 위치 기준 반경 내 자전거 대여소 목록을 조회한다.
      */
-    public List<StationResponse> findNearbyStations(Double lat, Double lng, Integer radius) {
+    public List<StationResponse> findNearbyStations(Double lat, Double lng, Integer radius, Integer number) {
         int searchRadius = resolveRadius(radius);
 
         List<ExternalStationItem> allStations = fetchAllStations();
@@ -73,6 +73,10 @@ public class BikeStationService {
                 .toList();
 
         log.info("반경 {}m 내 대여소: {}개", searchRadius, result.size());
+
+        if (number != null && number > 0) {
+            return result.stream().limit(number).toList();
+        }
         return result;
     }
 
