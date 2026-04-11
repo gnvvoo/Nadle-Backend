@@ -9,6 +9,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -68,6 +69,15 @@ public class GlobalExceptionHandler {
         log.error("처리 중 오류 발생: {}", e.getMessage());
         return ResponseEntity.internalServerError()
                 .body(new ErrorResponse(500, e.getMessage()));
+    }
+
+    /**
+     * 존재하지 않는 정적 리소스 요청 처리 (favicon.ico 등)
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFound(NoResourceFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(404, "요청한 리소스를 찾을 수 없습니다."));
     }
 
     /**
