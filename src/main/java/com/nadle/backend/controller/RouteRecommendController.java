@@ -33,9 +33,10 @@ public class RouteRecommendController {
     public ResponseEntity<ApiResponse<RouteRecommendResponse>> recommendRoute(
             @RequestParam @NotNull Double stationLat,
             @RequestParam @NotNull Double stationLng,
-            @RequestParam(required = false) Integer duration
+            @RequestParam(required = false) Integer duration,
+            @RequestParam(required = false) String requirements
     ) {
-        RouteRecommendResponse response = routeRecommendService.recommend(stationLat, stationLng, duration);
+        RouteRecommendResponse response = routeRecommendService.recommend(stationLat, stationLng, duration, requirements);
         return ResponseEntity.ok(ApiResponse.success("AI 코스 추천 성공", response));
     }
 }
