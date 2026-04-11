@@ -65,7 +65,7 @@ public class GroqService {
                         Map.of("role", "user", "content", prompt)
                 ),
                 "temperature", 0.7,
-                "max_tokens", 8192
+                "max_tokens", 1024
         );
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
@@ -97,36 +97,33 @@ public class GroqService {
 
     private String buildPrompt(List<TourSpotItem> spots, int duration, int spotCount, String requirements) {
         StringBuilder sb = new StringBuilder();
-        sb.append("당신은 자전거 여행 코스 추천 전문가입니다.\n");
+        sb.append("당신은 자전거 여행 코스 추천 전문가입니다.\n");                                      
         sb.append("아래 관광지 목록에서 자전거로 ").append(duration).append("분 동안 여행하기 좋은 ");
-        sb.append(spotCount).append("개의 관광지를 선택하여 최적의 코스를 추천해주세요.\n\n");
-        sb.append("조건:\n");
-        sb.append("- 이동 거리와 시간을 고려하여 효율적인 동선으로 구성하세요.\n");
-        sb.append("- 각 관광지 방문 이유를 한 문장으로 간결하게 설명하세요.\n");
-        sb.append("- 전체 코스를 한 줄로 소개하는 aiSummary를 작성하세요.\n");
-        sb.append("- 모든 응답은 반드시 한국어로 작성하세요.\n");
+        sb.append(spotCount).append("개의 관광지를 선택하여 최적의 코스를 추천해주세요.\n\n");          
+        sb.append("조건:\n");                                                                           
+        sb.append("- 이동 거리와 시간을 고려하여 효율적인 동선으로 구성하세요.\n");                     
+        sb.append("- 각 관광지 방문 이유를 한 문장으로 간결하게 설명하세요.\n");                        
+        sb.append("- 전체 코스를 한 줄로 소개하는 aiSummary를 작성하세요.\n");                          
+        sb.append("- 모든 응답은 반드시 한국어로 작성하세요.\n"); 
+        sb.append(duration).append("분, ").append(spotCount).append("개 선택.");
         if (requirements != null && !requirements.isBlank()) {
-            sb.append("- 사용자 요구사항: ").append(requirements).append("\n");
+            sb.append(" 요구사항: ").append(requirements).append(".");
         }
         sb.append("\n");
 
-        List<TourSpotItem> candidates = spots.size() > 10 ? spots.subList(0, 10) : spots;
-        sb.append("관광지 목록 (JSON):\n[\n");
+        List<TourSpotItem> candidates = spots.size() > 15 ? spots.subList(0, 15) : spots;
+        sb.append("[");
         for (int i = 0; i < candidates.size(); i++) {
             TourSpotItem spot = candidates.get(i);
-            sb.append("  {");
-            sb.append("\"id\": \"").append(spot.getContentId()).append("\", ");
-            sb.append("\"name\": \"").append(spot.getTitle()).append("\", ");
-            sb.append("\"x\": ").append(spot.getMapx()).append(", ");
-            sb.append("\"y\": ").append(spot.getMapy());
-            sb.append("}");
+            sb.append("{\"id\":\"").append(spot.getContentId()).append("\"");
+            sb.append(",\"name\":\"").append(spot.getTitle()).append("\"");
+            sb.append(",\"x\":").append(spot.getMapx());
+            sb.append(",\"y\":").append(spot.getMapy()).append("}");
             if (i < candidates.size() - 1) sb.append(",");
-            sb.append("\n");
         }
-        sb.append("]\n\n");
-
-        sb.append("반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 포함하지 마세요:\n");
-        sb.append("{\"aiSummary\":\"코스 한줄 소개\",\"spots\":[{\"contentId\":\"관광지ID\",\"title\":\"관광지명\",\"sequence\":1,\"reason\":\"추천 이유\",\"mapx\":경도값,\"mapy\":위도값}]}");
+        sb.append("]\n");
+        sb.append("반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 포함하지 마세요:\n"); 
+        sb.append("JSON만 출력:{\"aiSummary\":\"...\",\"spots\":[{\"contentId\":\"\",\"title\":\"\",\"sequence\":1,\"reason\":\"\",\"mapx\":0.0,\"mapy\":0.0}]}");
 
         return sb.toString();
     }
