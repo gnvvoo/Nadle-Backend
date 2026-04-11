@@ -7,7 +7,7 @@ services:
         sync: false
       - key: TOUR_API_KEY
         sync: false
-      - key: GEMINI_API_KEY
+      - key: GROQ_API_KEY
         sync: false
       - key: STORE_API_KEY
         sync: false

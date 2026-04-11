@@ -17,11 +17,11 @@ public class RouteRecommendService {
     private static final int DEFAULT_DURATION = 120;
 
     private final TourApiService tourApiService;
-    private final GeminiService geminiService;
+    private final GroqService groqService;
 
-    public RouteRecommendService(TourApiService tourApiService, GeminiService geminiService) {
+    public RouteRecommendService(TourApiService tourApiService, GroqService groqService) {
         this.tourApiService = tourApiService;
-        this.geminiService = geminiService;
+        this.groqService = groqService;
     }
 
     /**
@@ -47,8 +47,8 @@ public class RouteRecommendService {
             throw new RuntimeException("주변 관광지를 찾을 수 없습니다. 다른 위치를 시도해보세요.");
         }
 
-        log.info("주변 관광지 {}개 조회 완료, Gemini 코스 추천 요청", nearbySpots.size());
-        return geminiService.recommendCourse(nearbySpots, resolvedDuration, spotCount);
+        log.info("주변 관광지 {}개 조회 완료, Groq 코스 추천 요청", nearbySpots.size());
+        return groqService.recommendCourse(nearbySpots, resolvedDuration, spotCount);
     }
 
     /**

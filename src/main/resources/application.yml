@@ -30,9 +30,10 @@ tour-api:
   service-key: ${TOUR_API_KEY:}
   endpoint: https://apis.data.go.kr/B551011/KorService2
 
-gemini-api:
-  api-key: ${GEMINI_API_KEY:}
-  endpoint: https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent
+groq-api:
+  api-key: ${GROQ_API_KEY:}
+  endpoint: https://api.groq.com/openai/v1/chat/completions
+  model: llama-3.3-70b-versatile
   mock: false
 
 store-api:
