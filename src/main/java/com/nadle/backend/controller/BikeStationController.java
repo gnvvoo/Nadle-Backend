@@ -33,9 +33,10 @@ public class BikeStationController {
     public ResponseEntity<ApiResponse<List<StationResponse>>> getNearbyStations(
             @RequestParam @NotNull Double lat,
             @RequestParam @NotNull Double lng,
-            @RequestParam(required = false) Integer radius
+            @RequestParam(required = false) Integer radius,
+            @RequestParam(required = false) Integer number
     ) {
-        List<StationResponse> stations = bikeStationService.findNearbyStations(lat, lng, radius);
+        List<StationResponse> stations = bikeStationService.findNearbyStations(lat, lng, radius, number);
         return ResponseEntity.ok(ApiResponse.success("대여소 조회 성공", stations));
     }
 
