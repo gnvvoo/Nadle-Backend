@@ -42,6 +42,15 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 존재하지 않는 관광지 ID 요청 시 처리
+     */
+    @ExceptionHandler(SpotNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleSpotNotFound(SpotNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(404, e.getMessage()));
+    }
+
+    /**
      * 외부 API 호출 실패 시 처리
      */
     @ExceptionHandler(RestClientException.class)

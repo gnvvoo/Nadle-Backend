@@ -1,8 +1,11 @@
 package com.nadle.backend.service;
 
+import com.nadle.backend.exception.SpotNotFoundException;
 import com.nadle.backend.dto.SpotCategory;
+import com.nadle.backend.dto.SpotDetailResponse;
 import com.nadle.backend.dto.SpotListResponse;
 import com.nadle.backend.dto.SpotResponse;
+import com.nadle.backend.dto.external.ExternalTourDetailItem;
 import com.nadle.backend.dto.external.ExternalTourItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -178,6 +181,108 @@ public class TourSpotService {
                 item.getLng(),
                 item.getFirstimage(),
                 roundedDist
+        );
+    }
+
+    /**
+     * contentId 기준으로 관광지 상세 정보를 조회한다.
+     * 한국관광공사 API의 detailCommon2 엔드포인트를 사용한다.
+     *
+     * @param spotId 관광지 고유 ID (contentId)
+     */
+    public SpotDetailResponse findSpotDetail(String spotId) {
+        String url = endpoint
+                + "/detailCommon2"
+                + "?serviceKey=" + serviceKey
+                + "&MobileOS=ETC"
+                + "&MobileApp=Nadle"
+                + "&contentId=" + spotId
+                + "&_type=json";
+
+        log.info("관광 상세 API 호출: {}", url);
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> raw = restTemplate.getForObject(url, Map.class);
+
+        log.info("관광 상세 API 응답: {}", raw);
+
+        if (raw == null) {
+            throw new SpotNotFoundException(spotId);
+        }
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> response = raw.containsKey("response")
+                ? (Map<String, Object>) raw.get("response")
+                : raw;
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> body = (Map<String, Object>) response.get("body");
+        if (body == null) {
+            throw new SpotNotFoundException(spotId);
+        }
+
+        int totalCount = ((Number) body.getOrDefault("totalCount", 0)).intValue();
+        if (totalCount == 0) {
+            throw new SpotNotFoundException(spotId);
+        }
+
+        ExternalTourDetailItem item = parseDetailItem(body);
+        return toSpotDetailResponse(item);
+    }
+
+    @SuppressWarnings("unchecked")
+    private ExternalTourDetailItem parseDetailItem(Map<String, Object> body) {
+        Map<String, Object> items = (Map<String, Object>) body.get("items");
+        if (items == null) throw new IllegalStateException("응답에 items 없음");
+
+        Object itemRaw = items.get("item");
+        Map<String, Object> itemMap;
+        if (itemRaw instanceof List<?> list) {
+            itemMap = (Map<String, Object>) list.get(0);
+        } else if (itemRaw instanceof Map) {
+            itemMap = (Map<String, Object>) itemRaw;
+        } else {
+            throw new IllegalStateException("응답 item 파싱 실패");
+        }
+
+        ExternalTourDetailItem item = new ExternalTourDetailItem();
+        item.setContentid(str(itemMap.get("contentid")));
+        item.setContenttypeid(str(itemMap.get("contenttypeid")));
+        item.setTitle(str(itemMap.get("title")));
+        item.setOverview(str(itemMap.get("overview")));
+        item.setAddr1(str(itemMap.get("addr1")));
+        item.setMapx(str(itemMap.get("mapx")));
+        item.setMapy(str(itemMap.get("mapy")));
+        item.setFirstimage(str(itemMap.get("firstimage")));
+        item.setFirstimage2(str(itemMap.get("firstimage2")));
+        item.setTel(str(itemMap.get("tel")));
+        item.setCat1(str(itemMap.get("cat1")));
+        item.setCat2(str(itemMap.get("cat2")));
+        item.setCat3(str(itemMap.get("cat3")));
+        return item;
+    }
+
+    private SpotDetailResponse toSpotDetailResponse(ExternalTourDetailItem item) {
+        SpotCategory category = SpotCategory.fromItem(item.getContenttypeid(), item.getCat1());
+
+        List<String> images = new java.util.ArrayList<>();
+        if (item.getFirstimage() != null && !item.getFirstimage().isBlank()) {
+            images.add(item.getFirstimage());
+        }
+        if (item.getFirstimage2() != null && !item.getFirstimage2().isBlank()) {
+            images.add(item.getFirstimage2());
+        }
+
+        return new SpotDetailResponse(
+                item.getContentid(),
+                item.getTitle(),
+                item.getOverview(),
+                category,
+                item.getAddr1(),
+                item.getLat(),
+                item.getLng(),
+                images,
+                item.getTel()
         );
     }
 
