@@ -103,7 +103,8 @@ public class GroqService {
         sb.append("조건:\n");
         sb.append("- 이동 거리와 시간을 고려하여 효율적인 동선으로 구성하세요.\n");
         sb.append("- 각 관광지 방문 이유를 한 문장으로 간결하게 설명하세요.\n");
-        sb.append("- 전체 코스를 한 줄로 소개하는 aiSummary를 작성하세요.\n\n");
+        sb.append("- 전체 코스를 한 줄로 소개하는 aiSummary를 작성하세요.\n");
+        sb.append("- 모든 응답은 반드시 한국어로 작성하세요.\n\n");
 
         sb.append("관광지 목록 (JSON):\n[\n");
         for (int i = 0; i < spots.size(); i++) {
