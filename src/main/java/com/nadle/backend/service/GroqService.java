@@ -110,7 +110,7 @@ public class GroqService {
         }
         sb.append("\n");
 
-        List<TourSpotItem> candidates = spots.size() > 20 ? spots.subList(0, 20) : spots;
+        List<TourSpotItem> candidates = spots.size() > 10 ? spots.subList(0, 10) : spots;
         sb.append("관광지 목록 (JSON):\n[\n");
         for (int i = 0; i < candidates.size(); i++) {
             TourSpotItem spot = candidates.get(i);
