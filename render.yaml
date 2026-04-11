@@ -1,12 +1,8 @@
 services:
   - type: web
     name: nadle-backend
-    runtime: java
-    buildCommand: mvn clean package -DskipTests
-    startCommand: java -jar target/nadle-backend-0.0.1-SNAPSHOT.jar
+    runtime: docker
     envVars:
-      - key: JAVA_VERSION
-        value: 21
       - key: BIKE_API_KEY
         sync: false
       - key: TOUR_API_KEY
