@@ -160,7 +160,8 @@ public class GroqService {
         String cleaned = overview.replaceAll("<[^>]+>", " ").replaceAll("\\s+", " ").trim();
         String truncated = cleaned.length() > 800 ? cleaned.substring(0, 800) : cleaned;
 
-        String prompt = "한국어로만 응답. 아래 관광지 설명을 읽고 OX 퀴즈 1개를 만들어라.\n"
+        String prompt = "한국어로만 응답. 아래 관광지 설명을 읽고 반드시 OX 퀴즈 1개를 만들어라.\n"
+                + "반드시 퀴즈 형태는 OX로만 나올 것\n"
                 + "관광지: " + title + "\n"
                 + "설명: " + truncated + "\n"
                 + "JSON만 출력:{\"question\":\"문제\",\"answer\":true,\"explanation\":\"해설\"}";
