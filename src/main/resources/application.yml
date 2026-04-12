@@ -20,7 +20,7 @@ spring:
     include: secret
 
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 bike-api:
   service-key: ${BIKE_API_KEY:}
