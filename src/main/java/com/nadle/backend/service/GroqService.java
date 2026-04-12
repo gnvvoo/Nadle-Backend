@@ -160,8 +160,15 @@ public class GroqService {
         String cleaned = overview.replaceAll("<[^>]+>", " ").replaceAll("\\s+", " ").trim();
         String truncated = cleaned.length() > 800 ? cleaned.substring(0, 800) : cleaned;
 
-        String prompt = "한국어로만 응답. 아래 관광지 설명을 읽고 반드시 OX 퀴즈 1개를 만들어라.\n"
-                + "반드시 퀴즈 형태는 OX로만 나올 것\n"
+        String prompt = "한국어로만 응답. 아래 관광지 설명을 읽고 OX 퀴즈 1개를 만들어라.\n"
+                + "조건:\n"
+                + "- 문제는 반드시 '~이다.' 형태의 서술문으로 끝낼 것\n"
+                + "- 관광지 이름을 문제에 포함할 것\n"
+                + "- 설명에서 직접 근거를 찾을 수 있는 문제만 출제할 것 (뻔하거나 이름만 묻는 문제 금지)\n"
+                + "- 정답(answer)은 true 또는 false 중 설명 내용에 맞는 것으로 설정할 것\n"
+                + "- 해설은 설명에서 근거를 직접 인용하여 2문장 이내로 작성할 것\n\n"
+                + "예시1) {\"question\":\"경복궁은 조선 태조 때 창건된 궁궐이다.\",\"answer\":true,\"explanation\":\"경복궁은 1395년 태조 이성계가 창건하였습니다. 조선 왕조 최초의 궁궐입니다.\"}\n"
+                + "예시2) {\"question\":\"불국사는 신라 시대가 아닌 고려 시대에 창건된 사찰이다.\",\"answer\":false,\"explanation\":\"불국사는 신라 경덕왕 10년(751년)에 창건되었습니다. 고려 시대가 아닌 신라 시대의 건축물입니다.\"}\n\n"
                 + "관광지: " + title + "\n"
                 + "설명: " + truncated + "\n"
                 + "JSON만 출력:{\"question\":\"문제\",\"answer\":true,\"explanation\":\"해설\"}";
