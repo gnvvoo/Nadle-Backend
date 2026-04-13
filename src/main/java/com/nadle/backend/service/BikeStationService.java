@@ -162,44 +162,62 @@ public class BikeStationService {
     }
 
     /**
-     * 공공데이터 API에서 전체 대여소 기본정보를 조회한다 (주소, 운영시간 포함).
+     * 공공데이터 API에서 전체 대여소 기본정보를 페이지네이션으로 모두 조회한다 (주소, 운영시간 포함).
      */
     private List<ExternalStationInfoItem> fetchAllStationInfos() {
-        String url = endpoint + "/inf_101_00010001_v2"
-                + "?serviceKey=" + serviceKey
-                + "&numOfRows=" + PAGE_SIZE
-                + "&pageNo=1&type=json";
+        List<ExternalStationInfoItem> result = new java.util.ArrayList<>();
+        int pageNo = 1;
+        int totalCount = Integer.MAX_VALUE;
 
-        log.info("대여소 기본정보 API 호출: {}", url);
+        while (result.size() < totalCount) {
+            String url = endpoint + "/inf_101_00010001_v2"
+                    + "?serviceKey=" + serviceKey
+                    + "&numOfRows=" + PAGE_SIZE
+                    + "&pageNo=" + pageNo
+                    + "&type=json";
 
-        @SuppressWarnings("unchecked")
-        Map<String, Object> raw = restTemplate.getForObject(url, Map.class);
+            log.info("대여소 기본정보 API 호출 (페이지 {}): {}", pageNo, url);
 
-        if (raw == null) return List.of();
-
-        try {
             @SuppressWarnings("unchecked")
-            Map<String, Object> body = (Map<String, Object>) raw.get("body");
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> items = (List<Map<String, Object>>) body.get("item");
+            Map<String, Object> raw = restTemplate.getForObject(url, Map.class);
+            if (raw == null) break;
 
-            if (items == null) return List.of();
+            try {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> body = (Map<String, Object>) raw.get("body");
+                if (body == null) break;
 
-            return items.stream().map(item -> {
-                ExternalStationInfoItem info = new ExternalStationInfoItem();
-                info.setStationId((String) item.get("rntstnId"));
-                info.setStationName((String) item.get("rntstnNm"));
-                info.setAddress((String) item.get("roadNmAddr"));
-                info.setLat(toDouble(item.get("lat")));
-                info.setLng(toDouble(item.get("lot")));
-                info.setOperStartHour((String) item.get("operBgngHrCn"));
-                info.setOperEndHour((String) item.get("operEndHrCn"));
-                return info;
-            }).toList();
-        } catch (Exception e) {
-            log.error("기본정보 파싱 실패: {}", e.getMessage());
-            return List.of();
+                // 첫 페이지에서 totalCount 설정
+                if (pageNo == 1) {
+                    totalCount = ((Number) body.getOrDefault("totalCount", 0)).intValue();
+                    log.info("전체 대여소 기본정보 수: {}", totalCount);
+                }
+
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> items = (List<Map<String, Object>>) body.get("item");
+                if (items == null || items.isEmpty()) break;
+
+                items.forEach(item -> {
+                    ExternalStationInfoItem info = new ExternalStationInfoItem();
+                    info.setStationId((String) item.get("rntstnId"));
+                    info.setStationName((String) item.get("rntstnNm"));
+                    info.setAddress((String) item.get("roadNmAddr"));
+                    info.setLat(toDouble(item.get("lat")));
+                    info.setLng(toDouble(item.get("lot")));
+                    info.setOperStartHour((String) item.get("operBgngHrCn"));
+                    info.setOperEndHour((String) item.get("operEndHrCn"));
+                    result.add(info);
+                });
+
+                log.info("기본정보 페이지 {} 조회 완료: {}개 누적", pageNo, result.size());
+                pageNo++;
+            } catch (Exception e) {
+                log.error("기본정보 파싱 실패 (페이지 {}): {}", pageNo, e.getMessage());
+                break;
+            }
         }
+
+        return result;
     }
 
     private Double toDouble(Object value) {
