@@ -2,19 +2,16 @@ package com.nadle.backend.service;
 
 import com.nadle.backend.dto.StationDetailResponse;
 import com.nadle.backend.dto.StationResponse;
-import com.nadle.backend.dto.external.ExternalApiResponse;
 import com.nadle.backend.dto.external.ExternalStationInfoItem;
 import com.nadle.backend.dto.external.ExternalStationItem;
 import com.nadle.backend.exception.StationNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class BikeStationService {
@@ -30,19 +27,10 @@ public class BikeStationService {
     // 기본 반경 (단위: m)
     private static final int DEFAULT_RADIUS = 1000;
 
-    // API 허용 최대 페이지 크기
-    private static final int PAGE_SIZE = 1000;
+    private final BikeStationCacheService cacheService;
 
-    private final RestTemplate restTemplate;
-    private final String serviceKey;
-    private final String endpoint;
-
-    public BikeStationService(RestTemplate restTemplate,
-                              @Value("${bike-api.service-key}") String serviceKey,
-                              @Value("${bike-api.endpoint}") String endpoint) {
-        this.restTemplate = restTemplate;
-        this.serviceKey = serviceKey;
-        this.endpoint = endpoint;
+    public BikeStationService(BikeStationCacheService cacheService) {
+        this.cacheService = cacheService;
     }
 
     /**
@@ -51,7 +39,7 @@ public class BikeStationService {
     public List<StationResponse> findNearbyStations(Double lat, Double lng, Integer radius, Integer number) {
         int searchRadius = resolveRadius(radius);
 
-        List<ExternalStationItem> allStations = fetchAllStations();
+        List<ExternalStationItem> allStations = cacheService.fetchAllStations();
         log.info("외부 API 조회 결과: {}개 대여소", allStations.size());
 
         List<StationResponse> result = allStations.stream()
@@ -82,14 +70,24 @@ public class BikeStationService {
 
     /**
      * stationId로 특정 대여소 상세 정보를 조회한다.
+     * 기본정보와 현황을 병렬로 조회하여 응답 속도를 개선한다.
      */
     public StationDetailResponse findStationById(String stationId) {
-        ExternalStationInfoItem infoItem = fetchAllStationInfos().stream()
+        // 기본정보(주소, 운영시간)와 현황(가용 자전거)을 병렬로 조회
+        CompletableFuture<List<ExternalStationInfoItem>> infoFuture =
+                CompletableFuture.supplyAsync(() -> cacheService.fetchAllStationInfos());
+
+        CompletableFuture<List<ExternalStationItem>> availFuture =
+                CompletableFuture.supplyAsync(() -> cacheService.fetchAllStations());
+
+        CompletableFuture.allOf(infoFuture, availFuture).join();
+
+        ExternalStationInfoItem infoItem = infoFuture.join().stream()
                 .filter(item -> stationId.equals(item.getStationId()))
                 .findFirst()
                 .orElseThrow(() -> new StationNotFoundException(stationId));
 
-        ExternalStationItem availItem = fetchAllStations().stream()
+        ExternalStationItem availItem = availFuture.join().stream()
                 .filter(item -> stationId.equals(item.getStationId()))
                 .findFirst()
                 .orElse(null);
@@ -108,123 +106,6 @@ public class BikeStationService {
                 infoItem.getOperatingHours(),
                 status
         );
-    }
-
-    /**
-     * 공공데이터 API에서 전체 대여소 현황을 페이지네이션으로 모두 조회한다.
-     * API 최대 허용 numOfRows = 1000
-     */
-    private List<ExternalStationItem> fetchAllStations() {
-        List<ExternalStationItem> result = new java.util.ArrayList<>();
-        int pageNo = 1;
-        int totalCount = Integer.MAX_VALUE;
-
-        while (result.size() < totalCount) {
-            String url = endpoint + "/inf_101_00010002_v2"
-                    + "?serviceKey=" + serviceKey
-                    + "&numOfRows=" + PAGE_SIZE
-                    + "&pageNo=" + pageNo
-                    + "&type=json";
-
-            @SuppressWarnings("unchecked")
-            Map<String, Object> raw = restTemplate.getForObject(url, Map.class);
-            if (raw == null) break;
-
-            @SuppressWarnings("unchecked")
-            Map<String, Object> body = (Map<String, Object>) raw.get("body");
-            if (body == null) break;
-
-            // 첫 페이지에서 totalCount 설정
-            if (pageNo == 1) {
-                totalCount = ((Number) body.getOrDefault("totalCount", 0)).intValue();
-                log.info("전체 대여소 수: {}", totalCount);
-            }
-
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> items = (List<Map<String, Object>>) body.get("item");
-            if (items == null || items.isEmpty()) break;
-
-            items.forEach(item -> {
-                ExternalStationItem station = new ExternalStationItem();
-                station.setStationId((String) item.get("rntstnId"));
-                station.setStationName((String) item.get("rntstnNm"));
-                station.setLatRaw((String) item.get("lat"));
-                station.setLngRaw((String) item.get("lot"));
-                station.setBikeTotCntRaw((String) item.get("bcyclTpkctNocs"));
-                result.add(station);
-            });
-
-            log.info("페이지 {} 조회 완료: {}개 누적", pageNo, result.size());
-            pageNo++;
-        }
-
-        return result;
-    }
-
-    /**
-     * 공공데이터 API에서 전체 대여소 기본정보를 페이지네이션으로 모두 조회한다 (주소, 운영시간 포함).
-     */
-    private List<ExternalStationInfoItem> fetchAllStationInfos() {
-        List<ExternalStationInfoItem> result = new java.util.ArrayList<>();
-        int pageNo = 1;
-        int totalCount = Integer.MAX_VALUE;
-
-        while (result.size() < totalCount) {
-            String url = endpoint + "/inf_101_00010001_v2"
-                    + "?serviceKey=" + serviceKey
-                    + "&numOfRows=" + PAGE_SIZE
-                    + "&pageNo=" + pageNo
-                    + "&type=json";
-
-            log.info("대여소 기본정보 API 호출 (페이지 {}): {}", pageNo, url);
-
-            @SuppressWarnings("unchecked")
-            Map<String, Object> raw = restTemplate.getForObject(url, Map.class);
-            if (raw == null) break;
-
-            try {
-                @SuppressWarnings("unchecked")
-                Map<String, Object> body = (Map<String, Object>) raw.get("body");
-                if (body == null) break;
-
-                // 첫 페이지에서 totalCount 설정
-                if (pageNo == 1) {
-                    totalCount = ((Number) body.getOrDefault("totalCount", 0)).intValue();
-                    log.info("전체 대여소 기본정보 수: {}", totalCount);
-                }
-
-                @SuppressWarnings("unchecked")
-                List<Map<String, Object>> items = (List<Map<String, Object>>) body.get("item");
-                if (items == null || items.isEmpty()) break;
-
-                items.forEach(item -> {
-                    ExternalStationInfoItem info = new ExternalStationInfoItem();
-                    info.setStationId((String) item.get("rntstnId"));
-                    info.setStationName((String) item.get("rntstnNm"));
-                    info.setAddress((String) item.get("roadNmAddr"));
-                    info.setLat(toDouble(item.get("lat")));
-                    info.setLng(toDouble(item.get("lot")));
-                    info.setOperStartHour((String) item.get("operBgngHrCn"));
-                    info.setOperEndHour((String) item.get("operEndHrCn"));
-                    result.add(info);
-                });
-
-                log.info("기본정보 페이지 {} 조회 완료: {}개 누적", pageNo, result.size());
-                pageNo++;
-            } catch (Exception e) {
-                log.error("기본정보 파싱 실패 (페이지 {}): {}", pageNo, e.getMessage());
-                break;
-            }
-        }
-
-        return result;
-    }
-
-    private Double toDouble(Object value) {
-        if (value == null) return null;
-        if (value instanceof Number) return ((Number) value).doubleValue();
-        try { return Double.parseDouble(value.toString()); }
-        catch (NumberFormatException e) { return null; }
     }
 
     private int resolveRadius(Integer radius) {
